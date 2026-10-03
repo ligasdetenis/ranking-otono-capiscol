@@ -1328,7 +1328,7 @@ function renderAvailability(){
       </div>`;
     }).join(""):"";
 
-    return `<div class="avail" id="availability-${id}" data-availability-id="${id}">`
+    return `<div class="avail" id="availability-${id}" data-availability-id="${id}">
       <div class="availTop">
         <div>
           <div class="availName">${esc(x.author)}</div>
@@ -1357,7 +1357,7 @@ function renderAvailability(){
     const isClosed=x.status==="closed";
     const responses=Object.entries(x.responses||{});
     const canReply=state.me && state.me!==x.author && !isClosed;
-    return `<div class="avail" id="availability-${id}" data-availability-id="${id}">`
+    return `<div class="avail" id="availability-${id}" data-availability-id="${id}">
       <div class="availTop">
         <div>
           <div class="availName">${esc(x.author)}</div>
