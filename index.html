@@ -661,6 +661,18 @@
 .pushStatus{font-size:11px;color:var(--muted);line-height:1.35}
 .pushStatus strong{color:#dfe7ff}
 
+
+/* ===== Deep links desde notificaciones push ===== */
+.deepTarget{
+  outline:2px solid rgba(200,255,0,.78);
+  box-shadow:0 0 0 6px rgba(200,255,0,.10),0 18px 50px rgba(0,0,0,.44);
+  animation:deepPulse 1.2s ease 2;
+}
+@keyframes deepPulse{
+  0%,100%{filter:none}
+  50%{filter:brightness(1.16)}
+}
+
 </style>
 </head>
 
@@ -936,7 +948,10 @@ function updatePushUI(){
     cls+=" blocked";
   }else if(ps.permission && ps.opted){
     label="✓ Notificaciones activadas";
-    text="Recibirás avisos push como "+state.me+".";
+    const OS=window.CapOneSignal;
+    const ext=OS?.User?.externalId || playerExternalId(state.me);
+    const sid=OS?.User?.PushSubscription?.id || "";
+    text="Recibirás avisos como "+state.me+" · ID: "+ext+(sid ? " · dispositivo "+sid.slice(-6) : "");
     cls+=" on";
   }else{
     label="🔔 Activar notificaciones";
@@ -978,6 +993,11 @@ async function enablePushNotifications(){
     if(OS.Notifications.permission && !OS.User.PushSubscription.optedIn){
       await OS.User.PushSubscription.optIn();
     }
+
+    // Repetimos login después de activar la suscripción push:
+    // garantiza que este dispositivo quede asociado al jugador seleccionado.
+    await OS.login(playerExternalId(state.me));
+
     updatePushUI();
     if(OS.Notifications.permission){
       alert("🔔 Notificaciones activadas para "+state.me+".");
@@ -1005,6 +1025,7 @@ window.addEventListener("capiscol-onesignal-ready",()=>{
     }catch(e){console.warn(e);}
   }
   syncOneSignalIdentity();
+  setTimeout(syncOneSignalIdentity,1200);
 });
 
 async function request(payload){
@@ -1051,6 +1072,7 @@ function renderIdentity(){
       state.me=s.value;
       localStorage.setItem("ranking4_me",state.me);
       renderAll();
+setTimeout(handleDeepLink,450);
       renderNotifications();
       syncOneSignalIdentity();
     };
@@ -1059,6 +1081,7 @@ function renderIdentity(){
 
 async function publishAvailability(){
   if(!state.me)return alert("Selecciona primero quién eres.");
+  await syncOneSignalIdentity();
   const date=document.getElementById("availDate").value;
   const place=document.getElementById("availPlace").value.trim();
   const from=document.getElementById("availFrom").value;
@@ -1097,6 +1120,7 @@ async function deleteAvailability(id){
 async function respondAvailability(id,type){
   const item=state.availability[id];
   if(!state.me)return alert("Selecciona primero quién eres.");
+  await syncOneSignalIdentity();
   if(item.author===state.me)return alert("No puedes responder a tu propia disponibilidad.");
   if(item.status==="closed")return alert("Esta disponibilidad ya está cerrada.");
 
@@ -1207,6 +1231,7 @@ function agreementForMatch(m){
 }
 
 async function closeAgreement(availId,responseId){
+  await syncOneSignalIdentity();
   const item=state.availability[availId];
   const response=item?.responses?.[responseId];
   if(!item||!response)return;
@@ -1303,7 +1328,7 @@ function renderAvailability(){
       </div>`;
     }).join(""):"";
 
-    return `<div class="avail">
+    return `<div class="avail" id="availability-${id}" data-availability-id="${id}">`
       <div class="availTop">
         <div>
           <div class="availName">${esc(x.author)}</div>
@@ -1332,7 +1357,7 @@ function renderAvailability(){
     const isClosed=x.status==="closed";
     const responses=Object.entries(x.responses||{});
     const canReply=state.me && state.me!==x.author && !isClosed;
-    return `<div class="avail">
+    return `<div class="avail" id="availability-${id}" data-availability-id="${id}">`
       <div class="availTop">
         <div>
           <div class="availName">${esc(x.author)}</div>
@@ -1557,6 +1582,47 @@ function wireNotifications(){
     const wrap=e.target.closest?.(".notifyWrap");
     if(panel?.classList.contains("open") && !panel.contains(e.target) && !wrap) closeNotifications();
   });
+}
+
+
+function handleDeepLink(){
+  try{
+    const params=new URLSearchParams(location.search);
+    const target=params.get("target");
+    const availabilityId=params.get("availability");
+
+    let el=null;
+
+    if(target==="availability"){
+      el=document.getElementById("availability");
+      if(el) el.scrollIntoView({behavior:"smooth",block:"start"});
+      if(availabilityId){
+        setTimeout(()=>{
+          const card=document.getElementById("availability-"+availabilityId);
+          if(card){
+            card.scrollIntoView({behavior:"smooth",block:"center"});
+            card.classList.add("deepTarget");
+            setTimeout(()=>card.classList.remove("deepTarget"),3200);
+          }
+        },350);
+      }
+    }else if(target==="matches"){
+      el=document.getElementById("matches") || document.getElementById("matchListFull");
+      if(el) el.scrollIntoView({behavior:"smooth",block:"start"});
+      setTimeout(()=>{
+        const full=document.getElementById("matchListFull");
+        if(full){
+          full.classList.add("deepTarget");
+          setTimeout(()=>full.classList.remove("deepTarget"),3200);
+        }
+      },350);
+    }else if(target==="ranking"){
+      el=document.getElementById("ranking");
+      if(el) el.scrollIntoView({behavior:"smooth",block:"start"});
+    }
+  }catch(e){
+    console.warn("Deep link:",e);
+  }
 }
 
 function initials(name){
