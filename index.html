@@ -10,6 +10,25 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="logo.png">
   <title>Ranking de Otoño · Club Capiscol</title>
+
+  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+  <script>
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    window.OneSignalDeferred.push(async function(OneSignal) {
+      await OneSignal.init({
+        appId: "c8310b07-b523-4a82-bcdd-320176a668ff",
+        serviceWorkerPath: "ranking-otono-capiscol/push/onesignal/OneSignalSDKWorker.js",
+        serviceWorkerParam: { scope: "/ranking-otono-capiscol/push/onesignal/" },
+        notificationClickHandlerMatch: "origin",
+        notificationClickHandlerAction: "navigate",
+        autoResubscribe: true
+      });
+      OneSignal.Notifications.setDefaultUrl("https://ligasdetenis.github.io/ranking-otono-capiscol/");
+      window.CapOneSignal = OneSignal;
+      window.dispatchEvent(new Event("capiscol-onesignal-ready"));
+    });
+  </script>
+
   <style>
 
     :root{
@@ -627,6 +646,19 @@
   .notifyBtn{width:44px;height:44px;border-radius:14px}
 }
 
+
+/* ===== Push real OneSignal ===== */
+.pushBox{display:grid;gap:8px}
+.pushBtn{
+  width:100%;padding:10px 12px;border-radius:12px;
+  background:linear-gradient(135deg,var(--lime),var(--lime2));
+  color:#071100;font-weight:1000;border:0;
+}
+.pushBtn.on{background:rgba(200,255,0,.08);color:var(--lime);border:1px solid rgba(200,255,0,.32)}
+.pushBtn.blocked{background:rgba(255,107,107,.10);color:#ff9b9b;border:1px solid rgba(255,107,107,.28)}
+.pushStatus{font-size:11px;color:var(--muted);line-height:1.35}
+.pushStatus strong{color:#dfe7ff}
+
 </style>
 </head>
 
@@ -650,6 +682,12 @@
     <div class="installBox meBox">
       <b>Jugador activo</b>
       <select id="meSelect"></select>
+    </div>
+
+    <div class="installBox pushBox">
+      <b>🔔 Avisos push</b>
+      <button id="pushBtnSide" class="pushBtn" type="button">Activar notificaciones</button>
+      <span id="pushStatusSide" class="pushStatus">Selecciona tu jugador y activa los avisos.</span>
     </div>
     <div class="installBox">
       <b>📱 Añadir a inicio</b>
@@ -710,6 +748,10 @@
         <div class="pad profileBox">
           <label>¿Quién eres?</label>
           <select id="meSelectHome"></select>
+          <div class="pushBox">
+            <button id="pushBtnHome" class="pushBtn" type="button">🔔 Activar notificaciones push</button>
+            <div id="pushStatusHome" class="pushStatus">Recibe avisos aunque la app esté cerrada.</div>
+          </div>
           <div class="hint">Tu nombre queda guardado en este dispositivo.</div>
         </div>
       </section>
@@ -830,6 +872,139 @@ function uid(prefix="id"){return prefix+"_"+Date.now()+"_"+Math.random().toStrin
 function fmtDate(d){if(!d)return "—";return new Date(d+"T12:00:00").toLocaleDateString("es-ES",{weekday:"short",day:"2-digit",month:"short"});}
 function timeWindow(a,b){if(a&&b)return `${a}–${b}`; return a||b||"Hora flexible";}
 
+
+const ONESIGNAL_APP_ID="c8310b07-b523-4a82-bcdd-320176a668ff";
+
+function playerExternalId(name){
+  return "capiscol-otono-" + String(name||"")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g,"-")
+    .replace(/^-+|-+$/g,"");
+}
+
+async function syncOneSignalIdentity(){
+  const OS=window.CapOneSignal;
+  if(!OS) return;
+  try{
+    if(state.me){
+      await OS.login(playerExternalId(state.me));
+    }else if(OS.User?.externalId){
+      await OS.logout();
+    }
+  }catch(e){
+    console.warn("OneSignal identity:",e);
+  }
+  updatePushUI();
+}
+
+function getPushState(){
+  const OS=window.CapOneSignal;
+  if(!OS) return {ready:false,supported:null,permission:false,opted:false};
+  let supported=true;
+  try{ supported=OS.Notifications.isPushSupported(); }catch(e){}
+  return {
+    ready:true,
+    supported,
+    permission:!!OS.Notifications.permission,
+    opted:!!OS.User?.PushSubscription?.optedIn
+  };
+}
+
+function updatePushUI(){
+  const ps=getPushState();
+  const buttons=["pushBtnSide","pushBtnHome"].map(id=>document.getElementById(id)).filter(Boolean);
+  const statuses=["pushStatusSide","pushStatusHome"].map(id=>document.getElementById(id)).filter(Boolean);
+
+  let label="Activar notificaciones";
+  let text="Selecciona tu jugador y activa los avisos.";
+  let cls="pushBtn";
+
+  if(!state.me){
+    text="Selecciona primero tu nombre.";
+  }else if(!ps.ready){
+    text="Preparando notificaciones…";
+  }else if(ps.supported===false){
+    label="No compatible";
+    text="Este navegador no admite notificaciones push.";
+    cls+=" blocked";
+  }else if(Notification.permission==="denied"){
+    label="Notificaciones bloqueadas";
+    text="Están bloqueadas en el navegador. Debes permitirlas desde los ajustes del sitio.";
+    cls+=" blocked";
+  }else if(ps.permission && ps.opted){
+    label="✓ Notificaciones activadas";
+    text="Recibirás avisos push como "+state.me+".";
+    cls+=" on";
+  }else{
+    label="🔔 Activar notificaciones";
+    text="Pulsa para recibir avisos aunque la app esté cerrada.";
+  }
+
+  buttons.forEach(b=>{
+    b.textContent=label;
+    b.className=cls;
+    b.disabled = !state.me || ps.supported===false || Notification.permission==="denied";
+  });
+  statuses.forEach(s=>s.textContent=text);
+}
+
+async function enablePushNotifications(){
+  if(!state.me){
+    alert("Selecciona primero quién eres.");
+    return;
+  }
+  const OS=window.CapOneSignal;
+  if(!OS){
+    alert("OneSignal todavía se está cargando. Espera unos segundos y vuelve a pulsar.");
+    return;
+  }
+  if(!OS.Notifications.isPushSupported()){
+    alert("Este navegador no admite notificaciones push.");
+    return;
+  }
+  if(Notification.permission==="denied"){
+    alert("Las notificaciones están bloqueadas en el navegador. Abre los permisos del sitio y cambia Notificaciones a Permitir.");
+    return;
+  }
+
+  try{
+    await OS.login(playerExternalId(state.me));
+    if(!OS.Notifications.permission){
+      await OS.Notifications.requestPermission();
+    }
+    if(OS.Notifications.permission && !OS.User.PushSubscription.optedIn){
+      await OS.User.PushSubscription.optIn();
+    }
+    updatePushUI();
+    if(OS.Notifications.permission){
+      alert("🔔 Notificaciones activadas para "+state.me+".");
+    }
+  }catch(e){
+    console.error(e);
+    alert("No se pudieron activar las notificaciones: "+(e?.message||e));
+  }
+}
+
+function wirePushButtons(){
+  ["pushBtnSide","pushBtnHome"].forEach(id=>{
+    const b=document.getElementById(id);
+    if(b) b.onclick=enablePushNotifications;
+  });
+  updatePushUI();
+}
+
+window.addEventListener("capiscol-onesignal-ready",()=>{
+  const OS=window.CapOneSignal;
+  if(OS){
+    try{
+      OS.Notifications.addEventListener("permissionChange",updatePushUI);
+      OS.User.PushSubscription.addEventListener("change",updatePushUI);
+    }catch(e){console.warn(e);}
+  }
+  syncOneSignalIdentity();
+});
+
 async function request(payload){
   const r=await fetch(WORKER_URL,{
     method:"POST",
@@ -875,6 +1050,7 @@ function renderIdentity(){
       localStorage.setItem("ranking4_me",state.me);
       renderAll();
       renderNotifications();
+      syncOneSignalIdentity();
     };
   }
 }
@@ -1428,9 +1604,17 @@ document.getElementById("clearBtn").onclick=clearResult;
 document.getElementById("refreshBtn").onclick=refresh;
 
 wireNotifications();
+wirePushButtons();
 renderAll();refresh();setInterval(refresh,30000);
 
 setInterval(()=>{const c=document.getElementById("clockText"); if(c)c.textContent=new Date().toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"});},1000);
+
+
+if(window.CapOneSignal){
+  syncOneSignalIdentity();
+}else{
+  updatePushUI();
+}
 
 </script>
 <script>
