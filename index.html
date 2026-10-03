@@ -576,7 +576,58 @@
   .filters{grid-template-columns:1fr}
 }
 
-  </style>
+  
+/* ===== Notificaciones internas ===== */
+.notifyWrap{position:relative}
+.notifyBtn{
+  width:48px;height:48px;border-radius:16px;padding:0;
+  display:grid;place-items:center;font-size:22px;
+  background:rgba(255,255,255,.045);color:var(--text);
+  border:1px solid rgba(155,190,255,.22);
+  position:relative;
+}
+.notifyBtn:hover{border-color:rgba(200,255,0,.38);color:var(--lime)}
+.notifyBadge{
+  position:absolute;right:-5px;top:-6px;min-width:21px;height:21px;padding:0 5px;
+  border-radius:999px;background:var(--bad);color:#fff;font-size:11px;font-weight:1000;
+  display:none;align-items:center;justify-content:center;border:2px solid #030713;
+}
+.notifyPanel{
+  position:fixed;right:24px;top:82px;z-index:120;width:min(430px,calc(100vw - 28px));
+  max-height:72vh;overflow:hidden;display:none;
+  border:1px solid rgba(155,190,255,.24);border-radius:22px;
+  background:linear-gradient(180deg,rgba(9,22,47,.98),rgba(4,12,29,.98));
+  box-shadow:0 30px 80px rgba(0,0,0,.56);
+}
+.notifyPanel.open{display:block}
+.notifyHead{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:15px 16px;border-bottom:1px solid rgba(155,190,255,.14)
+}
+.notifyHead h3{margin:0;font-size:17px}
+.notifyActions{display:flex;gap:8px}
+.notifyActions button{padding:7px 10px;font-size:11px}
+.notifyList{max-height:58vh;overflow:auto;padding:10px;display:grid;gap:8px}
+.notifyItem{
+  border:1px solid rgba(155,190,255,.13);border-radius:15px;
+  background:rgba(255,255,255,.035);padding:11px 12px;cursor:pointer;
+}
+.notifyItem.unread{
+  border-color:rgba(200,255,0,.30);
+  background:linear-gradient(90deg,rgba(200,255,0,.08),rgba(255,255,255,.035));
+}
+.notifyItemTop{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.notifyTitle{font-weight:1000;font-size:13px}
+.notifyTime{color:var(--muted);font-size:10px;white-space:nowrap}
+.notifyText{color:#cbd4ef;font-size:12px;line-height:1.4;margin-top:4px}
+.notifyDot{width:8px;height:8px;border-radius:50%;background:var(--lime);box-shadow:0 0 14px rgba(200,255,0,.55);display:inline-block;margin-right:6px}
+.notifyEmpty{padding:24px;text-align:center;color:var(--muted)}
+@media(max-width:700px){
+  .notifyPanel{right:10px;left:10px;top:72px;width:auto}
+  .notifyBtn{width:44px;height:44px;border-radius:14px}
+}
+
+</style>
 </head>
 
 <body id="top">
@@ -623,6 +674,7 @@
         </div>
       </div>
       <div class="topPills">
+        <div class="notifyWrap"><button id="notifyBtn" class="notifyBtn" aria-label="Notificaciones">🔔<span id="notifyBadge" class="notifyBadge">0</span></button></div>
         <div class="topPill"><b>☁ En línea</b><span>Sincronizado</span></div>
         <div class="topPill"><b id="todayText">—</b><span id="clockText">—</span></div>
       </div>
@@ -822,6 +874,7 @@ function renderIdentity(){
       state.me=s.value;
       localStorage.setItem("ranking4_me",state.me);
       renderAll();
+      renderNotifications();
     };
   }
 }
@@ -1183,6 +1236,151 @@ async function clearResult(){
 async function refresh(){try{await loadAll();renderAll();}catch(e){alert("Error al actualizar: "+(e.message||e));}}
 
 
+
+const NOTIFY_KEY_PREFIX="ranking_otono_seen_";
+
+function notificationSeenSet(){
+  if(!state.me) return new Set();
+  try{return new Set(JSON.parse(localStorage.getItem(NOTIFY_KEY_PREFIX+state.me)||"[]"));}catch{return new Set();}
+}
+function saveNotificationSeen(set){
+  if(!state.me) return;
+  localStorage.setItem(NOTIFY_KEY_PREFIX+state.me,JSON.stringify([...set].slice(-500)));
+}
+function notificationItems(){
+  if(!state.me) return [];
+  const out=[];
+
+  for(const [aid,a] of Object.entries(state.availability||{})){
+    if(a.author && a.author!==state.me && a.status!=="closed"){
+      out.push({
+        id:"avail:"+aid,
+        kind:"availability",
+        createdAt:a.createdAt||"",
+        title:"Nueva disponibilidad",
+        text:`${a.author} puede jugar el ${fmtDate(a.date)}, ${timeWindow(a.timeFrom,a.timeTo)} · ${a.place||""}`,
+        target:"availability"
+      });
+    }
+
+    if(a.author===state.me){
+      for(const [rid,r] of Object.entries(a.responses||{})){
+        if(r.author===state.me) continue;
+        let detail=responseLabel(r.type);
+        if(r.type==="time" && (r.altFrom||r.altTo)) detail+=` · ${timeWindow(r.altFrom,r.altTo)}`;
+        if(r.type==="place" && r.altPlace) detail+=` · ${r.altPlace}`;
+        out.push({
+          id:"resp:"+aid+":"+rid,
+          kind:"response",
+          createdAt:r.createdAt||a.createdAt||"",
+          title:"Respuesta a tu disponibilidad",
+          text:`${r.author}: ${detail}`,
+          target:"availability"
+        });
+      }
+    }
+  }
+
+  for(const [gid,g] of Object.entries(state.agreements||{})){
+    if(g.a===state.me || g.b===state.me){
+      const rival=g.a===state.me?g.b:g.a;
+      out.push({
+        id:"agr:"+gid,
+        kind:"agreement",
+        createdAt:g.createdAt||"",
+        title:"Partido acordado",
+        text:`Con ${rival} · ${fmtDate(g.date)} · ${timeWindow(g.timeFrom,g.timeTo)} · ${g.place||""}`,
+        target:"matches"
+      });
+    }
+  }
+
+  return out.sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
+}
+function fmtNotifyTime(iso){
+  if(!iso) return "";
+  try{
+    const d=new Date(iso);
+    return d.toLocaleDateString("es-ES",{day:"2-digit",month:"short"}).replace(".","")+" · "+d.toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"});
+  }catch{return "";}
+}
+function renderNotifications(){
+  const btn=document.getElementById("notifyBtn");
+  const badge=document.getElementById("notifyBadge");
+  const list=document.getElementById("notifyList");
+  if(!btn||!badge||!list) return;
+
+  if(!state.me){
+    badge.style.display="none";
+    list.innerHTML='<div class="notifyEmpty">Selecciona primero tu nombre para ver tus avisos.</div>';
+    return;
+  }
+
+  const seen=notificationSeenSet();
+  const items=notificationItems();
+  const unread=items.filter(n=>!seen.has(n.id));
+
+  badge.textContent=unread.length>99?"99+":String(unread.length);
+  badge.style.display=unread.length?"flex":"none";
+
+  list.innerHTML=items.length?items.map(n=>`
+    <div class="notifyItem ${seen.has(n.id)?"":"unread"}" data-notify-id="${esc(n.id)}" data-target="${esc(n.target)}">
+      <div class="notifyItemTop">
+        <div class="notifyTitle">${seen.has(n.id)?"":"<span class=\"notifyDot\"></span>"}${esc(n.title)}</div>
+        <div class="notifyTime">${esc(fmtNotifyTime(n.createdAt))}</div>
+      </div>
+      <div class="notifyText">${esc(n.text)}</div>
+    </div>`).join(""):'<div class="notifyEmpty">No tienes avisos todavía.</div>';
+
+  list.querySelectorAll(".notifyItem").forEach(el=>{
+    el.onclick=()=>{
+      const s=notificationSeenSet();
+      s.add(el.dataset.notifyId);
+      saveNotificationSeen(s);
+      renderNotifications();
+      closeNotifications();
+      const target=document.getElementById(el.dataset.target);
+      if(target) target.scrollIntoView({behavior:"smooth",block:"start"});
+    };
+  });
+}
+function openNotifications(){
+  const panel=document.getElementById("notifyPanel");
+  if(!panel) return;
+  panel.classList.add("open");
+  panel.setAttribute("aria-hidden","false");
+  renderNotifications();
+}
+function closeNotifications(){
+  const panel=document.getElementById("notifyPanel");
+  if(!panel) return;
+  panel.classList.remove("open");
+  panel.setAttribute("aria-hidden","true");
+}
+function markAllNotificationsRead(){
+  if(!state.me) return;
+  const s=notificationSeenSet();
+  notificationItems().forEach(n=>s.add(n.id));
+  saveNotificationSeen(s);
+  renderNotifications();
+}
+function wireNotifications(){
+  const b=document.getElementById("notifyBtn");
+  const c=document.getElementById("closeNotifyBtn");
+  const m=document.getElementById("markAllReadBtn");
+  if(b) b.onclick=()=>{
+    const panel=document.getElementById("notifyPanel");
+    if(panel?.classList.contains("open")) closeNotifications(); else openNotifications();
+  };
+  if(c) c.onclick=closeNotifications;
+  if(m) m.onclick=markAllNotificationsRead;
+  document.addEventListener("click",e=>{
+    const panel=document.getElementById("notifyPanel");
+    const wrap=e.target.closest?.(".notifyWrap");
+    if(panel?.classList.contains("open") && !panel.contains(e.target) && !wrap) closeNotifications();
+  });
+}
+
 function initials(name){
   return name.split(" ").filter(Boolean).slice(0,2).map(x=>x[0]).join("").toUpperCase();
 }
@@ -1219,6 +1417,7 @@ function renderAll(){
   renderStandings();
   renderRankingMini();
   renderTopMeta();
+  renderNotifications();
 }
 
 
@@ -1228,6 +1427,7 @@ document.getElementById("saveBtn").onclick=saveResult;
 document.getElementById("clearBtn").onclick=clearResult;
 document.getElementById("refreshBtn").onclick=refresh;
 
+wireNotifications();
 renderAll();refresh();setInterval(refresh,30000);
 
 setInterval(()=>{const c=document.getElementById("clockText"); if(c)c.textContent=new Date().toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"});},1000);
