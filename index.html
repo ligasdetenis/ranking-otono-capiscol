@@ -689,10 +689,46 @@
 .deviceUnlink{width:100%;margin-top:8px;background:rgba(255,107,107,.09)!important;color:#ff9b9b!important;border:1px solid rgba(255,107,107,.24)!important}
 @media(max-width:700px){.assocCard{padding:18px;border-radius:22px}.assocCard h2{font-size:23px}}
 
+
+.versionBadge{
+  position:fixed;right:8px;bottom:8px;z-index:10000;
+  font-size:9px;font-weight:900;color:#071100;background:#c8ff00;
+  border-radius:999px;padding:4px 7px;opacity:.75;pointer-events:none
+}
+
 </style>
 </head>
 
 <body id="top">
+
+<div id="assocOverlay" class="assocOverlay" aria-modal="true" role="dialog">
+  <div class="assocCard">
+    <div class="assocLogo"><img src="logo.png" alt="Club Capiscol"></div>
+    <h2>Asocia este dispositivo</h2>
+    <div class="assocLead">
+      Antes de entrar al Ranking de Otoño necesitamos saber qué jugador utiliza este móvil, tablet u ordenador.
+    </div>
+    <div class="assocWhy">
+      <b>¿Por qué te lo pedimos?</b><br>
+      Para evitar que otra persona publique disponibilidades, responda o cierre partidos en tu nombre y para que los avisos lleguen al jugador correcto.
+      Esta asociación queda guardada en este dispositivo y podrás desvincularlo cuando quieras.
+    </div>
+    <div class="assocForm">
+      <div>
+        <label>Jugador</label>
+        <select id="assocPlayer"></select>
+      </div>
+      <div>
+        <label>PIN personal</label>
+        <input id="assocPin" type="password" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="6 cifras">
+      </div>
+      <button id="assocBtn" type="button">Asociar este dispositivo</button>
+      <div id="assocError" class="assocError"></div>
+      <div id="assocSuccess" class="assocSuccess">✓ Dispositivo asociado correctamente</div>
+    </div>
+  </div>
+</div>
+
   <aside class="sidebar">
     <div class="brand">
       <div class="brandBall"><img src="logo.png" alt="Club Capiscol" style="width:100%;height:100%;object-fit:cover;border-radius:20px"></div>
@@ -1770,5 +1806,6 @@ if ("serviceWorker" in navigator) {
   });
 }
 </script>
+<div class="versionBadge">V7.1</div>
 </body>
 </html>
