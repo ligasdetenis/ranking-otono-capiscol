@@ -696,10 +696,72 @@
   border-radius:999px;padding:4px 7px;opacity:.75;pointer-events:none
 }
 
+
+/* ===== Paso 1: instalación obligatoria ===== */
+.installGate{
+  position:fixed;inset:0;z-index:12000;display:none;align-items:center;justify-content:center;
+  padding:18px;background:rgba(1,4,12,.94);backdrop-filter:blur(18px)
+}
+.installGate.open{display:flex}
+.installCard{
+  width:min(610px,100%);max-height:92vh;overflow:auto;
+  border:1px solid rgba(200,255,0,.30);border-radius:28px;padding:22px;
+  background:
+    radial-gradient(440px 250px at 90% 0%,rgba(139,92,246,.22),transparent 70%),
+    linear-gradient(180deg,#0a1832,#061126);
+  box-shadow:0 34px 100px rgba(0,0,0,.70)
+}
+.installLogo{width:78px;height:78px;border-radius:22px;overflow:hidden;box-shadow:0 0 34px rgba(200,255,0,.22);margin-bottom:14px}
+.installLogo img{width:100%;height:100%;object-fit:cover}
+.installCard h2{margin:0;font-size:28px;letter-spacing:-.035em}
+.installLead{margin:9px 0 16px;color:#dfe7ff;line-height:1.5}
+.installSteps{display:grid;gap:10px;margin:12px 0}
+.installStep{
+  display:grid;grid-template-columns:34px 1fr;gap:10px;align-items:flex-start;
+  padding:11px 12px;border:1px solid rgba(155,190,255,.16);border-radius:15px;background:rgba(255,255,255,.035)
+}
+.installNum{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;background:rgba(200,255,0,.12);color:var(--lime);font-weight:1000}
+.installStep b{display:block;margin-bottom:2px}
+.installStep span{display:block;color:var(--muted);font-size:12px;line-height:1.45}
+.installPlatform{color:var(--lime);font-size:12px;font-weight:1000;margin-top:10px}
+.installPrimary{width:100%;margin-top:10px;padding:12px 14px;font-size:15px}
+.installHint{margin-top:10px;color:var(--muted);font-size:11px;line-height:1.45}
+.installCheck{
+  margin-top:12px;border:1px solid rgba(200,255,0,.22);border-radius:14px;
+  padding:10px 12px;background:rgba(200,255,0,.06);font-size:12px;color:#dff7a4
+}
+@media(max-width:700px){.installCard{padding:18px;border-radius:22px}.installCard h2{font-size:24px}}
+
 </style>
 </head>
 
 <body id="top">
+
+
+<div id="installGate" class="installGate" aria-modal="true" role="dialog">
+  <div class="installCard">
+    <div class="installLogo"><img src="logo.png" alt="Club Capiscol"></div>
+    <h2>1. Instala la app</h2>
+    <div class="installLead">
+      Antes de asociar tu jugador, instala <b>Ranking de Otoño · Club Capiscol</b> en este dispositivo.
+      Así funcionará como una app normal y podrá recibir avisos correctamente.
+    </div>
+
+    <div id="installPlatform" class="installPlatform"></div>
+    <div id="installInstructions" class="installSteps"></div>
+
+    <button id="installAppBtn" class="installPrimary" type="button" style="display:none">Instalar ahora</button>
+
+    <div class="installCheck">
+      <b>Importante:</b> cuando termine la instalación, abre la app desde el icono que aparecerá en tu pantalla de inicio, Dock o aplicaciones.
+      Al abrirla desde ese icono pasarás automáticamente al paso 2: asociar el dispositivo.
+    </div>
+
+    <div class="installHint">
+      Si ya la instalaste y sigues viendo esta pantalla, cierra esta pestaña del navegador y abre la app desde su icono.
+    </div>
+  </div>
+</div>
 
 <div id="assocOverlay" class="assocOverlay" aria-modal="true" role="dialog">
   <div class="assocCard">
@@ -943,7 +1005,133 @@ function timeWindow(a,b){if(a&&b)return `${a}–${b}`; return a||b||"Hora flexib
 
 
 
+
+let deferredInstallPrompt=null;
+
+function isStandaloneApp(){
+  return window.matchMedia?.("(display-mode: standalone)")?.matches ||
+         window.navigator.standalone === true;
+}
+
+function detectPlatform(){
+  const ua=navigator.userAgent||"";
+  const isIOS=/iPhone|iPad|iPod/i.test(ua);
+  const isAndroid=/Android/i.test(ua);
+  const isMac=/Macintosh|Mac OS X/i.test(ua);
+  return {isIOS,isAndroid,isMac};
+}
+
+function installInstructionsHTML(){
+  const p=detectPlatform();
+
+  if(p.isAndroid){
+    return {
+      label:"Android",
+      html:`
+        <div class="installStep"><div class="installNum">1</div><div><b>Pulsa “Instalar ahora”</b><span>Chrome mostrará la ventana para instalar la aplicación.</span></div></div>
+        <div class="installStep"><div class="installNum">2</div><div><b>Confirma “Instalar”</b><span>Espera unos segundos hasta que aparezca el icono.</span></div></div>
+        <div class="installStep"><div class="installNum">3</div><div><b>Abre el icono “Ranking Otoño”</b><span>No sigas desde esta pestaña del navegador.</span></div></div>`
+    };
+  }
+
+  if(p.isIOS){
+    return {
+      label:"iPhone / iPad",
+      html:`
+        <div class="installStep"><div class="installNum">1</div><div><b>Abre esta página en Safari</b><span>La instalación desde otros navegadores de iPhone/iPad puede no mostrar la opción correcta.</span></div></div>
+        <div class="installStep"><div class="installNum">2</div><div><b>Pulsa Compartir</b><span>Es el icono del cuadrado con una flecha hacia arriba.</span></div></div>
+        <div class="installStep"><div class="installNum">3</div><div><b>“Añadir a pantalla de inicio”</b><span>Confirma con “Añadir”.</span></div></div>
+        <div class="installStep"><div class="installNum">4</div><div><b>Abre el nuevo icono</b><span>Ahí continuará la asociación del dispositivo.</span></div></div>`
+    };
+  }
+
+  if(p.isMac){
+    return {
+      label:"Mac",
+      html:`
+        <div class="installStep"><div class="installNum">1</div><div><b>Chrome / Edge</b><span>Si aparece “Instalar ahora”, púlsalo y confirma la instalación.</span></div></div>
+        <div class="installStep"><div class="installNum">2</div><div><b>Safari</b><span>Usa Archivo → Añadir al Dock, si tu versión de macOS/Safari ofrece esa opción.</span></div></div>
+        <div class="installStep"><div class="installNum">3</div><div><b>Abre la app instalada</b><span>Hazlo desde el Dock, Launchpad o Aplicaciones.</span></div></div>`
+    };
+  }
+
+  return {
+    label:"Este dispositivo",
+    html:`
+      <div class="installStep"><div class="installNum">1</div><div><b>Busca la opción Instalar aplicación</b><span>En Chrome/Edge suele aparecer en la barra de direcciones o en el menú.</span></div></div>
+      <div class="installStep"><div class="installNum">2</div><div><b>Confirma la instalación</b><span>Espera a que se cree el icono.</span></div></div>
+      <div class="installStep"><div class="installNum">3</div><div><b>Abre la app desde ese icono</b><span>Después pasarás a asociar tu jugador.</span></div></div>`
+  };
+}
+
+function showInstallGate(){
+  const gate=document.getElementById("installGate");
+  if(!gate)return;
+  const info=installInstructionsHTML();
+  document.getElementById("installPlatform").textContent="Instrucciones para "+info.label;
+  document.getElementById("installInstructions").innerHTML=info.html;
+  const btn=document.getElementById("installAppBtn");
+  if(btn)btn.style.display=deferredInstallPrompt?"block":"none";
+  gate.classList.add("open");
+  document.body.style.overflow="hidden";
+}
+
+function hideInstallGate(){
+  const gate=document.getElementById("installGate");
+  if(!gate)return;
+  gate.classList.remove("open");
+  document.body.style.overflow="";
+}
+
+async function promptInstallApp(){
+  if(!deferredInstallPrompt){
+    showInstallGate();
+    return;
+  }
+  try{
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+  }catch(e){
+    console.warn("Install prompt:",e);
+  }finally{
+    deferredInstallPrompt=null;
+    const btn=document.getElementById("installAppBtn");
+    if(btn)btn.style.display="none";
+  }
+}
+
+function wireInstallGate(){
+  window.addEventListener("beforeinstallprompt",e=>{
+    e.preventDefault();
+    deferredInstallPrompt=e;
+    const btn=document.getElementById("installAppBtn");
+    if(btn)btn.style.display="block";
+  });
+
+  window.addEventListener("appinstalled",()=>{
+    // El navegador puede seguir mostrando la pestaña normal.
+    // La asociación se hará al abrir la PWA instalada.
+    const info=document.querySelector(".installCheck");
+    if(info)info.innerHTML="<b>✓ Instalación completada.</b><br>Ahora cierra esta pestaña y abre “Ranking Otoño” desde el nuevo icono.";
+  });
+
+  const btn=document.getElementById("installAppBtn");
+  if(btn)btn.onclick=promptInstallApp;
+}
+
+async function enforceStartupOrder(){
+  if(!isStandaloneApp()){
+    showInstallGate();
+    return false;
+  }
+
+  hideInstallGate();
+  await validateExistingAssociation();
+  return !!(state.me && state.authToken);
+}
+
 function openAssociation(){
+  if(!isStandaloneApp()){ showInstallGate(); return; }
   const ov=document.getElementById("assocOverlay"); if(!ov)return;
   ov.classList.add("open"); document.body.style.overflow="hidden";
   const sel=document.getElementById("assocPlayer");
@@ -1548,7 +1736,15 @@ async function clearResult(){
   delete state.results[matchId(m)];renderAll();
 }
 
-async function refresh(){try{await loadAll();renderAll();}catch(e){alert("Error al actualizar: "+(e.message||e));}}
+async function refresh(){
+  try{
+    await loadAll();
+    renderAll();
+    setTimeout(()=>handleDeepLink(),180);
+  }catch(e){
+    alert("Error al actualizar: "+(e.message||e));
+  }
+}
 
 
 
@@ -1654,8 +1850,13 @@ function renderNotifications(){
       saveNotificationSeen(s);
       renderNotifications();
       closeNotifications();
-      const target=document.getElementById(el.dataset.target);
-      if(target) target.scrollIntoView({behavior:"smooth",block:"start"});
+      const targetName=el.dataset.target;
+      if(targetName==="availability"){
+        history.replaceState({}, "", location.pathname+"?target=availability#availability");
+      }else if(targetName==="matches"){
+        history.replaceState({}, "", location.pathname+"?target=matches#matchListFull");
+      }
+      handleDeepLink();
     };
   });
 }
@@ -1700,41 +1901,82 @@ function wireNotifications(){
 function handleDeepLink(){
   try{
     const params=new URLSearchParams(location.search);
-    const target=params.get("target");
-    const availabilityId=params.get("availability");
+    let target=params.get("target")||"";
+    const availabilityId=params.get("availability")||"";
+    const hash=(location.hash||"").replace("#","");
 
-    let el=null;
+    if(!target){
+      if(hash==="availability") target="availability";
+      else if(hash==="matches"||hash==="matchListFull") target="matches";
+      else if(hash==="ranking"||hash==="rankingFull") target="ranking";
+    }
+
+    let primary=null;
+    let secondary=null;
 
     if(target==="availability"){
-      el=document.getElementById("availability");
-      if(el) el.scrollIntoView({behavior:"smooth",block:"start"});
+      primary=document.getElementById("availability");
       if(availabilityId){
-        setTimeout(()=>{
-          const card=document.getElementById("availability-"+availabilityId);
-          if(card){
-            card.scrollIntoView({behavior:"smooth",block:"center"});
-            card.classList.add("deepTarget");
-            setTimeout(()=>card.classList.remove("deepTarget"),3200);
-          }
-        },350);
+        secondary=document.getElementById("availability-"+availabilityId);
       }
     }else if(target==="matches"){
-      el=document.getElementById("matches") || document.getElementById("matchListFull");
-      if(el) el.scrollIntoView({behavior:"smooth",block:"start"});
-      setTimeout(()=>{
-        const full=document.getElementById("matchListFull");
-        if(full){
-          full.classList.add("deepTarget");
-          setTimeout(()=>full.classList.remove("deepTarget"),3200);
-        }
-      },350);
+      primary=document.getElementById("matchListFull") || document.getElementById("matches");
     }else if(target==="ranking"){
-      el=document.getElementById("ranking");
-      if(el) el.scrollIntoView({behavior:"smooth",block:"start"});
+      primary=document.getElementById("rankingFull") || document.getElementById("ranking");
     }
+
+    const chosen=secondary||primary;
+    if(!chosen) return;
+
+    // Un pequeño retraso permite que disponibilidad/partidos ya estén renderizados.
+    setTimeout(()=>{
+      const finalTarget=(availabilityId && document.getElementById("availability-"+availabilityId)) || chosen;
+      finalTarget.scrollIntoView({behavior:"smooth",block: availabilityId ? "center" : "start"});
+      finalTarget.classList.add("deepTarget");
+      setTimeout(()=>finalTarget.classList.remove("deepTarget"),3600);
+    },220);
   }catch(e){
     console.warn("Deep link:",e);
   }
+}
+
+function wireDeepLinks(){
+  // Si la notificación abre una URL nueva, esto cubre carga normal, PWA ya abierta,
+  // navegación interna y vuelta desde segundo plano.
+  window.addEventListener("load",()=>setTimeout(handleDeepLink,350));
+  window.addEventListener("pageshow",()=>setTimeout(handleDeepLink,250));
+  window.addEventListener("focus",()=>setTimeout(handleDeepLink,180));
+  window.addEventListener("popstate",()=>setTimeout(handleDeepLink,120));
+  window.addEventListener("hashchange",()=>setTimeout(handleDeepLink,120));
+  document.addEventListener("visibilitychange",()=>{
+    if(document.visibilityState==="visible") setTimeout(handleDeepLink,220);
+  });
+
+  // Cuando OneSignal dispara el click con la web ya abierta, navegamos a la URL
+  // del push y procesamos inmediatamente el destino.
+  const attach=()=>{
+    const OS=window.CapOneSignal;
+    if(!OS) return;
+    try{
+      OS.Notifications.addEventListener("click", event=>{
+        const launchURL =
+          event?.notification?.launchURL ||
+          event?.notification?.url ||
+          event?.result?.url ||
+          "";
+        if(launchURL){
+          try{
+            const u=new URL(launchURL,location.origin);
+            history.replaceState({}, "", u.pathname+u.search+u.hash);
+          }catch(e){}
+        }
+        setTimeout(()=>refresh().then(()=>handleDeepLink()),120);
+      });
+    }catch(e){ console.warn("OneSignal click handler:",e); }
+  };
+
+  if(window.CapOneSignal) attach();
+  else window.addEventListener("capiscol-onesignal-ready",attach,{once:true});
 }
 
 function initials(name){
@@ -1786,7 +2028,9 @@ document.getElementById("refreshBtn").onclick=refresh;
 wireNotifications();
 wirePushButtons();
 wireAssociation();
-validateExistingAssociation();
+wireDeepLinks();
+wireInstallGate();
+enforceStartupOrder();
 renderAll();refresh();setInterval(refresh,30000);
 
 setInterval(()=>{const c=document.getElementById("clockText"); if(c)c.textContent=new Date().toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"});},1000);
@@ -1806,6 +2050,6 @@ if ("serviceWorker" in navigator) {
   });
 }
 </script>
-<div class="versionBadge">V7.1</div>
+<div class="versionBadge">V7.3</div>
 </body>
 </html>
