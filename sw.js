@@ -1,4 +1,4 @@
-const CACHE_NAME = "ranking-otono-capiscol-v9";
+const CACHE_NAME = "ranking-otono-capiscol-v10.2";
 
 const APP_SHELL = [
   "./",

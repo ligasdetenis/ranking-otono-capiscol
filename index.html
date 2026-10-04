@@ -855,6 +855,112 @@ input,select,textarea{
   .titleBlock h1{font-size:25px}
 }
 
+
+/* ===== V10 · SECCIONES DIFERENCIADAS ===== */
+
+/* Ranking reducido: los cuatro puestos de ascenso */
+.rankingTable tr.promotionRow td{
+  background:#ecfdf5 !important;
+  border-color:#bbf7d0 !important;
+}
+.rankingTable tr.promotionRow td:first-child{
+  border-left:4px solid #16a34a !important;
+}
+.rankingTable tr:nth-child(4) .pos{
+  background:linear-gradient(135deg,#86efac,#16a34a) !important;
+  color:#052e16 !important;
+}
+.promotionLegend{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:6px 10px;border-radius:999px;
+  background:#dcfce7;color:#166534;font-size:11px;font-weight:900;
+}
+
+/* Fondos diferenciales suaves: se ve claramente dónde empieza/acaba cada bloque */
+#ranking{
+  background:#f0fdf4 !important;
+  border-color:#bbf7d0 !important;
+  box-shadow:0 14px 34px rgba(22,163,74,.08) !important;
+}
+#ranking .cardHeader{background:#dcfce7 !important}
+
+.mainGrid > .card:nth-child(2){
+  background:#eff6ff !important;
+  border-color:#bfdbfe !important;
+  box-shadow:0 14px 34px rgba(37,99,235,.07) !important;
+}
+.mainGrid > .card:nth-child(2) .cardHeader{background:#dbeafe !important}
+
+.bottomGrid > .card:nth-child(1){
+  background:#faf5ff !important;
+  border-color:#e9d5ff !important;
+}
+.bottomGrid > .card:nth-child(1) .cardHeader{background:#f3e8ff !important}
+
+#matches{
+  background:#fff7ed !important;
+  border-color:#fed7aa !important;
+}
+#matches .cardHeader{background:#ffedd5 !important}
+
+#availability{
+  background:#ecfeff !important;
+  border-color:#a5f3fc !important;
+}
+#availability > .cardHeader{background:#cffafe !important}
+#availability .availabilityGrid .card{
+  background:#ffffff !important;
+  border-color:#bae6fd !important;
+}
+
+#resultForm{
+  background:#fffbeb !important;
+  border-color:#fde68a !important;
+}
+#resultForm .cardHeader{background:#fef3c7 !important}
+
+#matchListFull{
+  background:#fff7ed !important;
+  border-color:#fed7aa !important;
+}
+#matchListFull .cardHeader{background:#ffedd5 !important}
+
+#rankingFull{
+  background:#f0fdf4 !important;
+  border-color:#bbf7d0 !important;
+}
+#rankingFull .cardHeader{background:#dcfce7 !important}
+
+/* KPIs: cada uno con un tono muy suave */
+.statsGrid .statCard:nth-child(1){background:#f0fdf4 !important;border-color:#bbf7d0 !important}
+.statsGrid .statCard:nth-child(2){background:#eff6ff !important;border-color:#bfdbfe !important}
+.statsGrid .statCard:nth-child(3){background:#ecfeff !important;border-color:#a5f3fc !important}
+.statsGrid .statCard:nth-child(4){background:#faf5ff !important;border-color:#e9d5ff !important}
+
+/* Logo dentro de la web: transparente y sin cápsula blanca excesiva */
+.brandBall{
+  background:transparent !important;
+  border:0 !important;
+  padding:0 !important;
+  box-shadow:none !important;
+}
+.brandBall img{
+  width:58px !important;height:58px !important;
+  object-fit:contain !important;
+  filter:drop-shadow(0 2px 3px rgba(0,0,0,.12));
+}
+
+/* En el móvil mantenemos todos los puestos legibles */
+@media(max-width:700px){
+  .rankingTable{min-width:620px}
+  #ranking .pad{overflow-x:auto}
+  .rankingTable td{font-size:12px !important;padding:7px 6px !important}
+  .rankingTable th{font-size:10px !important;padding:0 6px 6px !important}
+  .playerPhoto,.avatar{width:28px !important;height:28px !important}
+  .pos{width:28px !important;height:28px !important;border-radius:8px !important}
+  .promotionLegend{font-size:10px;padding:5px 8px}
+}
+
 </style>
 </head>
 
@@ -979,7 +1085,7 @@ input,select,textarea{
 
     <section class="mainGrid">
       <section class="card" id="ranking">
-        <div class="cardHeader"><h2>CLASIFICACIÓN ›</h2><button class="linkBtn" onclick="document.getElementById('rankingFull').scrollIntoView({behavior:'smooth'})">Ver completa</button></div>
+        <div class="cardHeader"><h2>CLASIFICACIÓN ›</h2><span class="promotionLegend">↑ Suben los 4 primeros</span></div>
         <div class="pad">
           <table class="rankingTable">
             <thead><tr><th>#</th><th>Jugador</th><th>PTS</th><th>PJ</th><th>SETS</th><th>JUEGOS</th></tr></thead>
@@ -2181,7 +2287,7 @@ function renderRankingMini(){
   const mini=document.getElementById("rankingMini");
   if(!mini) return;
   mini.innerHTML=s.slice(0,8).map((x,i)=>`
-    <tr>
+    <tr class="${i<4?'promotionRow':''}">
       <td><span class="pos">${i+1}</span></td>
       <td><div class="playerCell">${playerAvatarHTML(x.player)}${esc(x.player)}</div></td>
       <td><span class="points">${x.pts}</span></td>
@@ -2245,6 +2351,6 @@ if ("serviceWorker" in navigator) {
   });
 }
 </script>
-<div class="versionBadge">V9</div>
+<div class="versionBadge">V10.2</div>
 </body>
 </html>
