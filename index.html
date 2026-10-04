@@ -1123,6 +1123,329 @@ input,select,textarea{
   z-index:30000 !important;
 }
 
+
+/* ===== V11 · AIRE PREMIUM / APP MÓVIL ===== */
+:root{
+  --app-green:#0f7a45;
+  --app-green-dark:#075c34;
+  --app-green-soft:#edf9f1;
+  --app-ink:#102033;
+  --app-muted:#718096;
+  --app-line:#e8edf2;
+  --app-soft:#f7f9fb;
+}
+body{
+  font-family:"Inter","SF Pro Display","SF Pro Text",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  color:var(--app-ink);
+  background:#f3f6f8;
+}
+.app{max-width:1500px;margin-left:var(--side)}
+.topbar{
+  position:relative;
+  overflow:hidden;
+  background:#fff;
+  border:1px solid rgba(15,23,42,.08);
+  border-radius:24px;
+  padding:20px 22px;
+  box-shadow:0 12px 34px rgba(15,23,42,.06);
+}
+.topbar::after{
+  content:"";
+  position:absolute;
+  width:220px;height:220px;border-radius:50%;
+  right:-88px;bottom:-120px;
+  background:
+    radial-gradient(circle at 35% 35%,#e8ff66 0 22%,#b8df16 23% 54%,#91b707 55% 100%);
+  opacity:.16;
+  pointer-events:none;
+}
+.titleBlock{position:relative;z-index:1}
+.titleBlock h1{
+  font-size:34px;
+  font-weight:850;
+  letter-spacing:-.045em;
+  color:#102033;
+}
+.titleBlock .sub{font-size:15px;color:#758397}
+.trophy.trophyLogo{
+  width:72px;height:72px;border-radius:20px !important;
+  background:#fff !important;
+}
+.trophy.trophyLogo img{width:60px !important;height:60px !important}
+
+.quickNav{
+  display:flex;align-items:center;gap:6px;
+  width:max-content;max-width:100%;
+  margin:12px 0 16px;
+  padding:6px;
+  overflow-x:auto;
+  scrollbar-width:none;
+  border:1px solid #e7ebef;
+  border-radius:18px;
+  background:#fff;
+  box-shadow:0 10px 28px rgba(15,23,42,.06);
+}
+.quickNav::-webkit-scrollbar{display:none}
+.quickNav a,.quickNav button{
+  flex:0 0 auto;
+  display:flex;align-items:center;gap:7px;
+  padding:10px 14px;
+  border-radius:13px;
+  border:0 !important;
+  background:transparent !important;
+  color:#6b778a !important;
+  font-size:13px;font-weight:800;
+  text-decoration:none;
+  box-shadow:none !important;
+}
+.quickNav a:hover,.quickNav button:hover{background:#f4f8f5 !important;color:var(--app-green) !important}
+.quickNav .quickActive{
+  background:#eef9f2 !important;
+  color:var(--app-green) !important;
+}
+
+.statsGrid{gap:12px}
+.statCard{
+  border:1px solid #e8edf2 !important;
+  border-radius:20px !important;
+  background:#fff !important;
+  padding:15px 16px !important;
+  box-shadow:0 8px 24px rgba(15,23,42,.045) !important;
+}
+.statCard b{font-size:30px !important;color:#102033 !important}
+.statCard span{font-size:11px !important;color:#66758a !important}
+.statCard small{color:#9aa6b6 !important}
+.statIcon,.statIcon.blue,.statIcon.green,.statIcon.purple{
+  width:52px !important;height:52px !important;border-radius:15px !important;
+  background:#effaf3 !important;color:var(--app-green) !important;
+}
+
+/* Clasificación resumida */
+.rankingSummaryCard{
+  padding:0 16px 14px;
+  background:#fff !important;
+  border:1px solid #e7ecef !important;
+  border-radius:24px !important;
+  box-shadow:0 14px 36px rgba(15,23,42,.065) !important;
+}
+.rankingSummaryHead{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+  padding:18px 4px 14px;
+}
+.rankingSummaryHead h2{
+  margin:3px 0 0;
+  font-size:22px;
+  letter-spacing:-.035em;
+  color:#122033;
+}
+.rankingEyebrow{
+  font-size:10px;font-weight:900;letter-spacing:.09em;color:#8b98aa;
+}
+.promotionLegend{
+  background:#eaf9ee !important;color:#13733f !important;
+  border:0 !important;padding:8px 11px !important;font-size:11px !important;
+}
+.rankingMiniHead{
+  display:grid;
+  grid-template-columns:42px minmax(190px,1fr) 48px 48px 66px;
+  gap:6px;align-items:center;
+  padding:0 12px 7px;
+  color:#8b98aa;
+  font-size:10px;font-weight:900;text-transform:uppercase;
+}
+.rankingMiniHead span:nth-child(n+3){text-align:center}
+.rankingMiniList{display:grid;gap:4px}
+.rankingMiniRow{
+  display:grid;
+  grid-template-columns:42px minmax(190px,1fr) 48px 48px 66px;
+  gap:6px;align-items:center;
+  min-height:64px;
+  padding:7px 12px;
+  border:1px solid transparent;
+  border-bottom:1px solid #eef1f4;
+  border-radius:13px;
+  background:#fff;
+}
+.rankingMiniRow.promotionMini{
+  background:linear-gradient(90deg,#eef9f1,#f7fdf9);
+  border-color:#d9f2e1;
+}
+.rankNumber{
+  font-size:19px;font-weight:900;color:#7c8999;text-align:center;
+}
+.promotionMini .rankNumber{color:#0d8c48}
+.rankPlayer{display:flex;align-items:center;gap:10px;min-width:0}
+.rankingAvatar,.rankPlayer .avatar{
+  width:42px;height:42px;min-width:42px;border-radius:50%;object-fit:cover;
+  box-shadow:0 3px 10px rgba(15,23,42,.11);
+}
+.rankPlayerText{min-width:0}
+.rankPlayerText b{
+  display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  font-size:14px;color:#142236;
+}
+.rankPlayerText span{
+  display:block;margin-top:3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  color:#7d8999;font-size:11px;
+}
+.rankStat{text-align:center}
+.rankStat small{display:none}
+.rankStat b{font-size:14px;color:#243448}
+.rankPoints{
+  display:flex;align-items:baseline;justify-content:center;gap:3px;
+  min-width:54px;padding:7px 7px;border-radius:10px;
+  background:#f1f3f5;color:#1e293b;
+  font-weight:950;font-size:16px;
+}
+.rankPoints small{font-size:8px;font-weight:900;color:#758194}
+.promotionMini .rankPoints{background:#dff5e5;color:#116c3a}
+.rankingFullBtn{
+  display:block;width:100%;
+  margin-top:10px;padding:11px 14px !important;
+  border-radius:13px !important;
+  background:#f7faf8 !important;
+  color:#157342 !important;
+  border:1px solid #e2eee6 !important;
+  font-size:12px;font-weight:900;
+}
+
+/* Cards secundarias más limpias */
+.card{
+  border-radius:22px !important;
+  border:1px solid #e7ecef !important;
+  box-shadow:0 10px 28px rgba(15,23,42,.05) !important;
+}
+.cardHeader{background:#fff !important}
+.mainGrid > .card:nth-child(2),
+.bottomGrid > .card:nth-child(1),
+#matches,#availability,#resultForm,#matchListFull,#rankingFull{
+  background:#fff !important;
+}
+.mainGrid > .card:nth-child(2) .cardHeader,
+.bottomGrid > .card:nth-child(1) .cardHeader,
+#matches .cardHeader,#availability>.cardHeader,#resultForm .cardHeader,
+#matchListFull .cardHeader,#rankingFull .cardHeader{
+  background:#fff !important;
+}
+
+/* Menú inferior tipo app nativa */
+.mobileNav{
+  left:12px !important;right:12px !important;bottom:10px !important;
+  width:auto !important;
+  border-radius:22px !important;
+  padding:7px 5px calc(7px + env(safe-area-inset-bottom)) !important;
+  border:1px solid #e5eaee !important;
+  background:rgba(255,255,255,.97) !important;
+  backdrop-filter:blur(18px);
+  box-shadow:0 12px 38px rgba(15,23,42,.16) !important;
+  overflow:hidden;
+}
+.mobileNav a{
+  border-radius:14px !important;
+  color:#69778a !important;
+  transition:.18s ease;
+}
+.mobileNav a.active{
+  color:var(--app-green) !important;
+  background:#eff9f2 !important;
+}
+.mobileNav a span{font-weight:850 !important}
+.versionBadge{bottom:86px !important}
+
+/* móvil */
+@media(max-width:1100px){
+  .app{margin-left:0 !important}
+}
+@media(max-width:700px){
+  body{background:#f4f7f8}
+  .app{padding:10px 10px 102px !important}
+  .topbar{
+    display:block !important;
+    margin-bottom:10px !important;
+    padding:13px 14px 15px !important;
+    border-radius:0 0 22px 22px !important;
+    border-left:0 !important;border-right:0 !important;border-top:0 !important;
+    box-shadow:0 7px 20px rgba(15,23,42,.055) !important;
+  }
+  .titleBlock{gap:10px !important}
+  .trophy.trophyLogo{
+    width:52px !important;height:52px !important;
+    padding:3px !important;border-radius:15px !important;
+  }
+  .trophy.trophyLogo img{width:46px !important;height:46px !important}
+  .titleBlock h1{
+    font-size:23px !important;line-height:1.05 !important;
+    letter-spacing:-.04em !important;
+  }
+  .titleBlock .sub{font-size:12px !important;margin-top:5px !important}
+  .topPills{
+    margin-top:12px;
+    display:flex !important;gap:7px !important;
+    flex-wrap:nowrap !important;overflow-x:auto;
+    scrollbar-width:none;
+  }
+  .topPills::-webkit-scrollbar{display:none}
+  .rulesTopBtn{display:none !important}
+  .topPill{
+    min-width:max-content !important;
+    padding:7px 10px !important;border-radius:12px !important;
+    box-shadow:none !important;background:#f8fafb !important;
+  }
+  .topPill b{font-size:11px}
+  .topPill span{font-size:9px !important}
+  .notifyBtn{width:38px !important;height:38px !important;border-radius:12px !important}
+  .quickNav{
+    margin:8px 0 12px !important;
+    width:100%;
+    border-radius:17px;
+    box-shadow:0 7px 19px rgba(15,23,42,.045);
+  }
+  .quickNav a,.quickNav button{
+    padding:9px 11px;
+    font-size:11px;
+  }
+  .statsGrid{
+    grid-template-columns:repeat(2,1fr) !important;
+    gap:8px !important;margin-bottom:10px !important;
+  }
+  .statCard{
+    padding:11px 11px !important;gap:9px !important;border-radius:17px !important;
+  }
+  .statIcon,.statIcon.blue,.statIcon.green,.statIcon.purple{
+    width:42px !important;height:42px !important;font-size:19px !important;border-radius:12px !important;
+  }
+  .statCard b{font-size:24px !important}
+  .statCard span{font-size:9px !important}
+  .statCard small{font-size:9px !important}
+
+  .mainGrid{display:block !important}
+  .rankingSummaryCard{margin-bottom:10px;padding:0 8px 10px !important}
+  .rankingSummaryHead{padding:14px 7px 11px}
+  .rankingSummaryHead h2{font-size:19px}
+  .rankingEyebrow{font-size:8px}
+  .promotionLegend{font-size:9px !important;padding:6px 8px !important}
+  .rankingMiniHead{
+    grid-template-columns:30px minmax(0,1fr) 34px 34px 55px;
+    padding:0 7px 6px;font-size:8px;
+  }
+  .rankingMiniRow{
+    grid-template-columns:30px minmax(0,1fr) 34px 34px 55px;
+    min-height:58px;padding:6px 7px;gap:4px;border-radius:12px;
+  }
+  .rankNumber{font-size:17px}
+  .rankingAvatar,.rankPlayer .avatar{width:36px;height:36px;min-width:36px}
+  .rankPlayer{gap:8px}
+  .rankPlayerText b{font-size:12px}
+  .rankPlayerText span{font-size:9px;margin-top:2px}
+  .rankStat b{font-size:12px}
+  .rankPoints{min-width:50px;padding:7px 5px;font-size:14px}
+  .rankPoints small{font-size:7px}
+  .rankingFullBtn{font-size:11px !important;margin-top:8px}
+  .mainGrid > .card:nth-child(2){margin-bottom:10px}
+  .bottomGrid{gap:10px !important}
+}
+
 </style>
 </head>
 
@@ -1266,6 +1589,14 @@ input,select,textarea{
       </div>
     </header>
 
+    <nav class="quickNav" aria-label="Accesos rápidos">
+      <a href="#ranking" class="quickActive">🏆 <span>Resumen</span></a>
+      <a href="#matchListFull">🎾 <span>Partidos</span></a>
+      <a href="#availability">◷ <span>Disponible</span></a>
+      <a href="#resultForm">＋ <span>Resultado</span></a>
+      <button id="rulesBtnQuick" type="button">📜 <span>Normas</span></button>
+    </nav>
+
     <section class="statsGrid">
       <div class="statCard"><div class="statIcon">👥</div><div><b>16</b><span>Jugadores</span><small>en competición</small></div></div>
       <div class="statCard"><div class="statIcon blue">📅</div><div><b>120</b><span>Partidos</span><small>todos contra todos</small></div></div>
@@ -1274,14 +1605,21 @@ input,select,textarea{
     </section>
 
     <section class="mainGrid">
-      <section class="card" id="ranking">
-        <div class="cardHeader"><h2>CLASIFICACIÓN ›</h2><span class="promotionLegend">↑ Suben los 4 primeros</span></div>
-        <div class="pad">
-          <table class="rankingTable">
-            <thead><tr><th>#</th><th>Jugador</th><th>PJ</th><th>PG</th><th>SETS</th><th>PTS</th></tr></thead>
-            <tbody id="rankingMini"></tbody>
-          </table>
+      <section class="card rankingSummaryCard" id="ranking">
+        <div class="rankingSummaryHead">
+          <div>
+            <div class="rankingEyebrow">TEMPORADA DE OTOÑO · CATEGORÍA 4</div>
+            <h2>Clasificación resumida</h2>
+          </div>
+          <span class="promotionLegend">↑ Top 4 ascienden</span>
         </div>
+        <div class="rankingMiniHead">
+          <span>#</span><span>Jugador</span><span>PJ</span><span>PG</span><span>PTS</span>
+        </div>
+        <div class="rankingMiniList" id="rankingMini"></div>
+        <button class="rankingFullBtn" type="button" onclick="document.getElementById('rankingFull').scrollIntoView({behavior:'smooth'})">
+          Ver clasificación completa →
+        </button>
       </section>
 
       <section class="card">
@@ -2451,8 +2789,25 @@ function closeRules(){
   ov.setAttribute("aria-hidden","true");
   document.body.style.overflow="";
 }
+
+function wireQuickNav(){
+  document.querySelectorAll(".quickNav a").forEach(a=>{
+    a.addEventListener("click",e=>{
+      const hash=a.getAttribute("href");
+      const target=document.querySelector(hash);
+      if(!target)return;
+      e.preventDefault();
+      document.querySelectorAll(".quickNav a").forEach(x=>x.classList.remove("quickActive"));
+      a.classList.add("quickActive");
+      target.scrollIntoView({behavior:"smooth",block:"start"});
+      history.replaceState({}, "", hash);
+    });
+  });
+}
+
 function wireRules(){
   document.getElementById("rulesBtnTop")?.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();openRules();});
+  document.getElementById("rulesBtnQuick")?.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();openRules();});
   document.getElementById("rulesBtnSide")?.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();openRules();});
   document.getElementById("rulesClose")?.addEventListener("click",closeRules);
   document.getElementById("rulesOverlay")?.addEventListener("click",e=>{
@@ -2634,14 +2989,19 @@ function renderRankingMini(){
   const mini=document.getElementById("rankingMini");
   if(!mini) return;
   mini.innerHTML=s.slice(0,8).map((x,i)=>`
-    <tr class="${i<4?'promotionRow':''}">
-      <td><span class="pos">${i+1}</span></td>
-      <td><div class="playerCell">${playerAvatarHTML(x.player)}${esc(x.player)}</div></td>
-      <td>${x.pj}</td>
-      <td><b>${x.pg}</b></td>
-      <td>${x.sf}-${x.sc}</td>
-      <td><span class="points">${x.pts}</span></td>
-    </tr>`).join("");
+    <div class="rankingMiniRow ${i<4?'promotionMini':''}">
+      <div class="rankNumber">${i+1}</div>
+      <div class="rankPlayer">
+        ${playerAvatarHTML(x.player,"rankingAvatar")}
+        <div class="rankPlayerText">
+          <b>${esc(x.player)}</b>
+          <span>Sets ${x.sf}-${x.sc} · Juegos ${x.gf}-${x.ga}</span>
+        </div>
+      </div>
+      <div class="rankStat"><small>PJ</small><b>${x.pj}</b></div>
+      <div class="rankStat"><small>PG</small><b>${x.pg}</b></div>
+      <div class="rankPoints">${x.pts}<small>PTS</small></div>
+    </div>`).join("");
 }
 
 function renderTopMeta(){
@@ -2677,6 +3037,7 @@ wirePushButtons();
 wireAssociation();
 wireDeepLinks();
 wireRules();
+wireQuickNav();
 wireActiveNavigation();
 wireInstallGate();
 wireProfilePhoto();
@@ -2700,6 +3061,6 @@ if ("serviceWorker" in navigator) {
   });
 }
 </script>
-<div class="versionBadge">V10.8</div>
+<div class="versionBadge">V11</div>
 </body>
 </html>
