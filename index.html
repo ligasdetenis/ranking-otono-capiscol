@@ -673,6 +673,22 @@
   50%{filter:brightness(1.16)}
 }
 
+
+/* ===== Asociación segura del dispositivo ===== */
+.assocOverlay{position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(1,4,12,.90);backdrop-filter:blur(16px)}
+.assocOverlay.open{display:flex}
+.assocCard{width:min(520px,100%);border:1px solid rgba(200,255,0,.28);border-radius:26px;background:radial-gradient(420px 230px at 90% 0%,rgba(139,92,246,.20),transparent 70%),linear-gradient(180deg,#0a1832,#061126);box-shadow:0 30px 90px rgba(0,0,0,.66);padding:22px}
+.assocLogo{width:74px;height:74px;border-radius:22px;overflow:hidden;margin-bottom:14px;box-shadow:0 0 32px rgba(200,255,0,.20)}
+.assocLogo img{width:100%;height:100%;object-fit:cover}
+.assocCard h2{margin:0;font-size:26px;letter-spacing:-.03em}
+.assocLead{color:#dfe7ff;line-height:1.5;margin:10px 0 15px}
+.assocWhy{border:1px solid rgba(155,190,255,.16);border-radius:16px;padding:12px 13px;background:rgba(255,255,255,.035);color:var(--muted);font-size:12px;line-height:1.5;margin-bottom:14px}
+.assocForm{display:grid;gap:10px}
+.assocError{display:none;color:#ff9b9b;font-size:12px;font-weight:800}
+.assocSuccess{display:none;color:var(--lime);font-size:12px;font-weight:900}
+.deviceUnlink{width:100%;margin-top:8px;background:rgba(255,107,107,.09)!important;color:#ff9b9b!important;border:1px solid rgba(255,107,107,.24)!important}
+@media(max-width:700px){.assocCard{padding:18px;border-radius:22px}.assocCard h2{font-size:23px}}
+
 </style>
 </head>
 
@@ -702,6 +718,7 @@
       <b>🔔 Avisos push</b>
       <button id="pushBtnSide" class="pushBtn" type="button">Activar notificaciones</button>
       <span id="pushStatusSide" class="pushStatus">Selecciona tu jugador y activa los avisos.</span>
+      <button id="unlinkDeviceSide" class="secondary deviceUnlink" type="button">Desvincular este dispositivo</button>
     </div>
     <div class="installBox">
       <b>📱 Añadir a inicio</b>
@@ -765,6 +782,7 @@
           <div class="pushBox">
             <button id="pushBtnHome" class="pushBtn" type="button">🔔 Activar notificaciones push</button>
             <div id="pushStatusHome" class="pushStatus">Recibe avisos aunque la app esté cerrada.</div>
+            <button id="unlinkDeviceHome" class="secondary deviceUnlink" type="button">Desvincular este dispositivo</button>
           </div>
           <div class="hint">Tu nombre queda guardado en este dispositivo.</div>
         </div>
@@ -871,6 +889,7 @@ const MATCHES=[{"id": "M001", "a": "Diego Mercado", "b": "David García Ruiz"}, 
 
 const state={
   me:localStorage.getItem("ranking4_me")||"",
+  authToken:localStorage.getItem("ranking4_auth_token")||"",
   results:{},
   availability:{},
   agreements:{},
@@ -886,6 +905,71 @@ function uid(prefix="id"){return prefix+"_"+Date.now()+"_"+Math.random().toStrin
 function fmtDate(d){if(!d)return "—";return new Date(d+"T12:00:00").toLocaleDateString("es-ES",{weekday:"short",day:"2-digit",month:"short"});}
 function timeWindow(a,b){if(a&&b)return `${a}–${b}`; return a||b||"Hora flexible";}
 
+
+
+function openAssociation(){
+  const ov=document.getElementById("assocOverlay"); if(!ov)return;
+  ov.classList.add("open"); document.body.style.overflow="hidden";
+  const sel=document.getElementById("assocPlayer");
+  if(sel){
+    sel.innerHTML='<option value="">— Selecciona tu nombre —</option>'+PLAYERS.map(p=>`<option value="${esc(p)}">${esc(p)}</option>`).join("");
+    sel.value=state.me||"";
+  }
+  const pin=document.getElementById("assocPin"); if(pin)pin.value="";
+}
+function closeAssociation(){const ov=document.getElementById("assocOverlay");if(!ov)return;ov.classList.remove("open");document.body.style.overflow="";}
+async function associateDevice(){
+  const player=document.getElementById("assocPlayer")?.value||"";
+  const pin=(document.getElementById("assocPin")?.value||"").trim();
+  const err=document.getElementById("assocError"), ok=document.getElementById("assocSuccess"), btn=document.getElementById("assocBtn");
+  if(err){err.style.display="none";err.textContent="";} if(ok)ok.style.display="none";
+  if(!player){if(err){err.textContent="Selecciona tu nombre.";err.style.display="block";}return;}
+  if(!/^\d{6}$/.test(pin)){if(err){err.textContent="Introduce tu PIN de 6 cifras.";err.style.display="block";}return;}
+  try{
+    if(btn){btn.disabled=true;btn.textContent="Comprobando…";}
+    const r=await fetch(WORKER_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({competitionId:COMPETITION_ID,action:"loginPlayer",player,pin})});
+    const txt=await r.text();let data;try{data=JSON.parse(txt)}catch{data={error:txt}}
+    if(!r.ok||!data.ok||!data.authToken)throw new Error(data.error||"PIN incorrecto");
+    state.me=player;state.authToken=data.authToken;
+    localStorage.setItem("ranking4_me",player);localStorage.setItem("ranking4_auth_token",data.authToken);
+    if(ok)ok.style.display="block";
+    renderAll();renderNotifications();await syncOneSignalIdentity();setTimeout(closeAssociation,500);
+  }catch(e){if(err){err.textContent=e?.message||"No se pudo asociar el dispositivo.";err.style.display="block";}}
+  finally{if(btn){btn.disabled=false;btn.textContent="Asociar este dispositivo";}}
+}
+async function unlinkThisDevice(){
+  if(!confirm("¿Desvincular este dispositivo?\n\nDejará de identificarse como "+(state.me||"este jugador")+" y se desactivarán aquí las notificaciones push."))return;
+  try{
+    const OS=window.CapOneSignal;
+    if(OS){
+      try{if(OS.User?.PushSubscription?.optedIn)await OS.User.PushSubscription.optOut();}catch(e){console.warn(e);}
+      try{await OS.logout();}catch(e){console.warn(e);}
+    }
+  }finally{
+    const oldMe=state.me;state.me="";state.authToken="";
+    localStorage.removeItem("ranking4_me");localStorage.removeItem("ranking4_auth_token");
+    if(oldMe)localStorage.removeItem(NOTIFY_KEY_PREFIX+oldMe);
+    renderAll();renderNotifications();updatePushUI();openAssociation();
+  }
+}
+function wireAssociation(){
+  const b=document.getElementById("assocBtn");if(b)b.onclick=associateDevice;
+  const pin=document.getElementById("assocPin");if(pin)pin.addEventListener("keydown",e=>{if(e.key==="Enter")associateDevice();});
+  ["unlinkDeviceSide","unlinkDeviceHome"].forEach(id=>{const el=document.getElementById(id);if(el)el.onclick=unlinkThisDevice;});
+}
+async function validateExistingAssociation(){
+  if(!state.me||!state.authToken){openAssociation();return false;}
+  try{
+    const r=await fetch(WORKER_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({competitionId:COMPETITION_ID,action:"validateSession",authToken:state.authToken})});
+    const data=await r.json().catch(()=>({}));
+    if(!r.ok||!data.ok||data.player!==state.me)throw new Error("Sesión no válida");
+    return true;
+  }catch(e){
+    state.me="";state.authToken="";
+    localStorage.removeItem("ranking4_me");localStorage.removeItem("ranking4_auth_token");
+    openAssociation();return false;
+  }
+}
 
 const ONESIGNAL_APP_ID="c8310b07-b523-4a82-bcdd-320176a668ff";
 
@@ -1032,7 +1116,7 @@ async function request(payload){
   const r=await fetch(WORKER_URL,{
     method:"POST",
     headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({competitionId:COMPETITION_ID,...payload})
+    body:JSON.stringify({competitionId:COMPETITION_ID,authToken:state.authToken||"",...payload})
   });
   const txt=await r.text();let data;try{data=JSON.parse(txt)}catch{data=txt}
   if(!r.ok)throw new Error(typeof data==="string"?data:(data.error||JSON.stringify(data)));
@@ -1065,17 +1149,9 @@ function playerOptions(selected){
 
 function renderIdentity(){
   for(const id of ["meSelect","meSelectHome"]){
-    const s=document.getElementById(id);
-    s.innerHTML=playerOptions(state.me);
-    s.value=state.me;
-    s.onchange=()=>{
-      state.me=s.value;
-      localStorage.setItem("ranking4_me",state.me);
-      renderAll();
-setTimeout(handleDeepLink,450);
-      renderNotifications();
-      syncOneSignalIdentity();
-    };
+    const s=document.getElementById(id); if(!s)continue;
+    s.innerHTML=state.me?`<option value="${esc(state.me)}">${esc(state.me)}</option>`:'<option value="">— Sin asociar —</option>';
+    s.value=state.me||""; s.disabled=true;
   }
 }
 
@@ -1673,6 +1749,8 @@ document.getElementById("refreshBtn").onclick=refresh;
 
 wireNotifications();
 wirePushButtons();
+wireAssociation();
+validateExistingAssociation();
 renderAll();refresh();setInterval(refresh,30000);
 
 setInterval(()=>{const c=document.getElementById("clockText"); if(c)c.textContent=new Date().toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"});},1000);
