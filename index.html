@@ -986,6 +986,31 @@ input,select,textarea{
   #ranking .rankingTable{min-width:560px}
 }
 
+
+/* ===== V10.5 · LOGO EN CABECERA ===== */
+.trophy.trophyLogo{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#fff !important;
+  border:1px solid rgba(15,23,42,.08);
+  border-radius:18px;
+  padding:6px;
+  box-shadow:0 6px 16px rgba(15,23,42,.08);
+}
+.trophy.trophyLogo img{
+  width:56px;
+  height:56px;
+  object-fit:contain;
+  display:block;
+}
+@media (max-width:700px){
+  .trophy.trophyLogo img{
+    width:48px;
+    height:48px;
+  }
+}
+
 </style>
 </head>
 
@@ -1088,7 +1113,7 @@ input,select,textarea{
   <main class="app">
     <header class="topbar">
       <div class="titleBlock">
-        <div class="trophy">🏆</div>
+        <div class="trophy trophyLogo"><img src="logo.png" alt="C.D. Capiscol"></div>
         <div>
           <h1>Ranking de Otoño · Categoría 4</h1>
           <div class="sub">Club Capiscol · octubre a diciembre de 2026</div>
@@ -2376,6 +2401,6 @@ if ("serviceWorker" in navigator) {
   });
 }
 </script>
-<div class="versionBadge">V10.4</div>
+<div class="versionBadge">V10.5</div>
 </body>
 </html>
