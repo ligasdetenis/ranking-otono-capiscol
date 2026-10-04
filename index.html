@@ -1114,10 +1114,44 @@ input,select,textarea{
   .rulesTopBtn{padding:9px 11px;font-size:12px}
 }
 
+
+/* ===== V10.8 · NAVEGACIÓN CORREGIDA ===== */
+#ranking,#availability,#resultForm,#matchListFull,#rankingFull,#matches{
+  scroll-margin-top:18px;
+}
+.rulesOverlay{
+  z-index:30000 !important;
+}
+
 </style>
 </head>
 
 <body id="top">
+
+<div id="rulesOverlay" class="rulesOverlay" aria-hidden="true">
+  <div class="rulesModal" role="dialog" aria-modal="true" aria-labelledby="rulesTitle">
+    <div class="rulesModalHead">
+      <div>
+        <small>RANKING DE OTOÑO · CATEGORÍA 4</small>
+        <h2 id="rulesTitle">Normas básicas</h2>
+      </div>
+      <button id="rulesClose" class="rulesClose" type="button" aria-label="Cerrar normas">×</button>
+    </div>
+    <div class="rulesList">
+      <div><span>👥</span><p><b>16 jugadores.</b> Todos juegan una vez contra todos.</p></div>
+      <div><span>📅</span><p>La competición se disputa de <b>octubre a diciembre de 2026</b>.</p></div>
+      <div><span>🏆</span><p><b>2-0:</b> ganador 3 puntos · perdedor 1 punto.</p></div>
+      <div><span>🤝</span><p><b>1-1:</b> 2 puntos para cada jugador.</p></div>
+      <div><span>⏱️</span><p>Si solo se juega <b>1 set:</b> ganador 2 puntos · perdedor 1 punto.</p></div>
+      <div><span>📊</span><p>Desempates: <b>enfrentamiento directo</b> y después <b>juegos ganados</b>.</p></div>
+      <div><span>⬆️</span><p>Los <b>4 primeros ascienden</b> de categoría.</p></div>
+      <div><span>⬇️</span><p>Los <b>4 últimos descienden</b> de categoría.</p></div>
+      <div><span>📝</span><p>El resultado debe seguir anotándose en el <b>archivo oficial de la web del club</b>.</p></div>
+      <div><span>📱</span><p>Esta app es un <b>complemento</b> para organizar disponibilidades, partidos y clasificación.</p></div>
+    </div>
+  </div>
+</div>
+
 
 
 <div id="installGate" class="installGate" aria-modal="true" role="dialog">
@@ -1210,7 +1244,7 @@ input,select,textarea{
   <nav class="mobileNav">
     <a href="#top">⌂<span>Inicio</span></a>
     <a href="#ranking">🏆<span>Ranking</span></a>
-    <a href="#matches">⚔<span>Partidos</span></a>
+    <a href="#matchListFull">⚔<span>Partidos</span></a>
     <a href="#availability">◷<span>Disponible</span></a>
     <a href="#resultForm">＋<span>Resultado</span></a>
   </nav>
@@ -2418,8 +2452,8 @@ function closeRules(){
   document.body.style.overflow="";
 }
 function wireRules(){
-  document.getElementById("rulesBtnTop")?.addEventListener("click",openRules);
-  document.getElementById("rulesBtnSide")?.addEventListener("click",openRules);
+  document.getElementById("rulesBtnTop")?.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();openRules();});
+  document.getElementById("rulesBtnSide")?.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();openRules();});
   document.getElementById("rulesClose")?.addEventListener("click",closeRules);
   document.getElementById("rulesOverlay")?.addEventListener("click",e=>{
     if(e.target?.id==="rulesOverlay")closeRules();
@@ -2435,45 +2469,65 @@ function setActiveNav(hash){
   });
 }
 
-function updateActiveNavFromScroll(){
-  const targets=["#top","#ranking","#matches","#availability","#resultForm"]
-    .map(hash=>{
-      const el=hash==="#top"?document.querySelector(".app"):document.querySelector(hash);
-      return el?{hash,top:el.getBoundingClientRect().top+window.scrollY}:null;
-    })
-    .filter(Boolean)
-    .sort((a,b)=>a.top-b.top);
+function activeSectionFromScroll(){
+  const sections=[
+    {hash:"#top",el:document.getElementById("top")},
+    {hash:"#ranking",el:document.getElementById("ranking")},
+    {hash:"#availability",el:document.getElementById("availability")},
+    {hash:"#resultForm",el:document.getElementById("resultForm")},
+    {hash:"#matchListFull",el:document.getElementById("matchListFull")}
+  ].filter(x=>x.el);
 
-  const marker=window.scrollY+Math.min(220,window.innerHeight*.28);
+  const marker=window.scrollY+Math.min(260,window.innerHeight*0.35);
   let current="#top";
-  for(const t of targets){
-    if(t.top<=marker)current=t.hash;
-    else break;
+  for(const s of sections){
+    const top=s.el.getBoundingClientRect().top+window.scrollY;
+    if(top<=marker) current=s.hash;
   }
-  setActiveNav(current);
+  return current;
 }
 
 function wireActiveNavigation(){
-  document.querySelectorAll(".mobileNav a,.sidebar .nav a").forEach(a=>{
-    a.addEventListener("click",()=>{
-      const h=a.getAttribute("href");
-      if(h?.startsWith("#"))setActiveNav(h);
+  document.querySelectorAll(".mobileNav a").forEach(a=>{
+    a.addEventListener("click",e=>{
+      const hash=a.getAttribute("href");
+      const target=document.querySelector(hash);
+      if(!target)return;
+      e.preventDefault();
+      setActiveNav(hash);
+      target.scrollIntoView({behavior:"smooth",block:"start"});
+      history.replaceState({}, "", hash);
+    });
+  });
+
+  document.querySelectorAll(".sidebar .nav a").forEach(a=>{
+    a.addEventListener("click",e=>{
+      const hash=a.getAttribute("href");
+      const target=document.querySelector(hash);
+      if(!target)return;
+      e.preventDefault();
+      target.scrollIntoView({behavior:"smooth",block:"start"});
+      history.replaceState({}, "", hash);
     });
   });
 
   let ticking=false;
-  const onScroll=()=>{
+  const refreshActive=()=>{
     if(ticking)return;
     ticking=true;
     requestAnimationFrame(()=>{
-      updateActiveNavFromScroll();
+      setActiveNav(activeSectionFromScroll());
       ticking=false;
     });
   };
-  window.addEventListener("scroll",onScroll,{passive:true});
-  window.addEventListener("resize",onScroll);
-  window.addEventListener("hashchange",()=>setTimeout(updateActiveNavFromScroll,80));
-  setTimeout(updateActiveNavFromScroll,250);
+
+  window.addEventListener("scroll",refreshActive,{passive:true});
+  window.addEventListener("resize",refreshActive);
+  window.addEventListener("hashchange",()=>{
+    const h=location.hash;
+    if(h) setActiveNav(h);
+  });
+  setTimeout(refreshActive,300);
 }
 
 function wireDeepLinks(){
@@ -2646,6 +2700,6 @@ if ("serviceWorker" in navigator) {
   });
 }
 </script>
-<div class="versionBadge">V10.7</div>
+<div class="versionBadge">V10.8</div>
 </body>
 </html>
