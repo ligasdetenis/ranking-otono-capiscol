@@ -1478,6 +1478,37 @@ body{
   }
 }
 
+
+/* ===== V11.2 · PROPUESTAS ACEPTAR / RECHAZAR ===== */
+.proposalResponse{
+  border-left:4px solid #f59e0b !important;
+}
+.proposalResponse.accepted{
+  border-left-color:#16a34a !important;
+  background:#f0fdf4 !important;
+}
+.proposalResponse.rejected{
+  border-left-color:#dc2626 !important;
+  background:#fef2f2 !important;
+  opacity:.88;
+}
+.proposalResponseTop{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  margin-bottom:5px;
+}
+.proposalStatus{
+  display:inline-flex;align-items:center;justify-content:center;
+  padding:4px 8px;border-radius:999px;font-size:10px;font-weight:900;
+  white-space:nowrap;
+}
+.proposalStatus.pending{background:#fff7ed;color:#c2410c}
+.proposalStatus.accepted{background:#dcfce7;color:#166534}
+.proposalStatus.rejected{background:#fee2e2;color:#b91c1c}
+@media(max-width:700px){
+  .proposalResponseTop{align-items:flex-start}
+  .proposalResponseTop b{font-size:12px}
+}
+
 </style>
 </head>
 
@@ -2316,6 +2347,7 @@ async function respondAvailability(id,type){
       altFrom:"",
       altTo:"",
       altPlace:"",
+      status:"pending",
       createdAt:new Date().toISOString()
     };
 
@@ -2371,6 +2403,7 @@ async function respondAvailability(id,type){
     altFrom,
     altTo,
     altPlace:altPlace.trim(),
+    status:"pending",
     createdAt:new Date().toISOString()
   };
 
@@ -2388,6 +2421,14 @@ function responseLabel(type){
   return "💬 Respuesta";
 }
 
+
+function responseStatusLabel(response){
+  const status=response?.status||"pending";
+  if(status==="accepted") return `<span class="proposalStatus accepted">✓ Aceptada</span>`;
+  if(status==="rejected") return `<span class="proposalStatus rejected">✕ Rechazada</span>`;
+  return `<span class="proposalStatus pending">Pendiente</span>`;
+}
+
 function findMatchBetween(a,b){
   return MATCHES.find(m => (m.a===a&&m.b===b)||(m.a===b&&m.b===a));
 }
@@ -2401,7 +2442,9 @@ async function closeAgreement(availId,responseId){
   const item=state.availability[availId];
   const response=item?.responses?.[responseId];
   if(!item||!response)return;
-  if(state.me!==item.author)return alert("Solo quien publicó la disponibilidad puede cerrar el acuerdo.");
+  if(state.me!==item.author)return alert("Solo quien publicó la disponibilidad puede aceptar la propuesta.");
+  if((response.status||"pending")==="rejected")return alert("Esta propuesta fue rechazada.");
+  if((response.status||"pending")==="accepted")return alert("Esta propuesta ya fue aceptada.");
 
   const m=findMatchBetween(item.author,response.author);
   if(!m)return alert("No se ha encontrado el enfrentamiento entre ambos jugadores.");
@@ -2418,7 +2461,7 @@ async function closeAgreement(availId,responseId){
     place=response.altPlace;
   }
 
-  if(!confirm(`¿Cerrar partido con ${response.author}?\n\n📅 ${fmtDate(item.date)}\n⏰ ${timeWindow(from,to)}\n📍 ${place}`))return;
+  if(!confirm(`¿Aceptar la propuesta de ${response.author} y cerrar el partido?\n\n📅 ${fmtDate(item.date)}\n⏰ ${timeWindow(from,to)}\n📍 ${place}`))return;
 
   const agreementId=uid("agreement");
   const agreement={
@@ -2440,13 +2483,42 @@ async function closeAgreement(availId,responseId){
   state.availability[availId].status="closed";
   state.availability[availId].closedByAgreement=agreementId;
   renderAll();
-  alert(`🎾 Partido acordado con ${response.author}.`);
+  if(state.availability[availId]?.responses?.[responseId]){
+    state.availability[availId].responses[responseId].status="accepted";
+    state.availability[availId].responses[responseId].decidedAt=new Date().toISOString();
+  }
+  alert(`🎾 Propuesta aceptada. Partido acordado con ${response.author}.`);
+}
+
+
+async function rejectResponse(availId,responseId){
+  const item=state.availability[availId];
+  const response=item?.responses?.[responseId];
+  if(!item||!response)return;
+  if(state.me!==item.author)return alert("Solo quien recibió la propuesta puede rechazarla.");
+  if((response.status||"pending")!=="pending")return alert("Esta propuesta ya ha sido respondida.");
+
+  if(!confirm(`¿Rechazar la propuesta de ${response.author}?`))return;
+
+  await request({
+    action:"decideAvailabilityResponse",
+    availabilityId:availId,
+    responseId,
+    decision:"rejected"
+  });
+
+  response.status="rejected";
+  response.decidedAt=new Date().toISOString();
+  renderAll();
+  alert("❌ Propuesta rechazada.");
 }
 
 async function deleteResponse(availId,responseId){
   const item=state.availability[availId];
   const response=item?.responses?.[responseId];
-  if(!response||response.author!==state.me)return alert("Solo puedes borrar tu propia respuesta.");
+  if(!response||response.author!==state.me)return alert("Solo puedes retirar tu propia propuesta.");
+  if((response.status||"pending")!=="pending")return alert("Esta propuesta ya ha sido respondida.");
+  if(!confirm("¿Retirar esta propuesta?"))return;
   await request({action:"deleteAvailabilityResponse",availabilityId:availId,responseId});
   delete state.availability[availId].responses[responseId];
   renderAll();
@@ -2484,12 +2556,19 @@ function renderAvailability(){
       if(r.type==="place") extra+=`<div>Lugar propuesto: <b>${esc(r.altPlace)}</b></div>`;
       if(r.message) extra+=`<div>💬 ${esc(r.message)}</div>`;
 
-      return `<div class="response">
-        <b>↳ ${esc(r.author)} · ${responseLabel(r.type)}</b>
+      const proposalStatus=r.status||"pending";
+      return `<div class="response proposalResponse ${proposalStatus}">
+        <div class="proposalResponseTop">
+          <b>↳ ${esc(r.author)} · ${responseLabel(r.type)}</b>
+          ${responseStatusLabel(r)}
+        </div>
         ${extra}
         <div class="btnRow">
-          ${state.me===x.author&&!isClosed?`<button class="btn ok" onclick="closeAgreement('${id}','${rid}')">🎾 Cerrar acuerdo con ${esc(r.author)}</button>`:""}
-          ${r.author===state.me&&!isClosed?`<button class="btn secondary" onclick="deleteResponse('${id}','${rid}')">Borrar respuesta</button>`:""}
+          ${state.me===x.author&&!isClosed&&proposalStatus==="pending"?`
+            <button class="btn ok" onclick="closeAgreement('${id}','${rid}')">✅ Aceptar propuesta</button>
+            <button class="btn danger" onclick="rejectResponse('${id}','${rid}')">❌ Rechazar</button>`:""}
+          ${r.author===state.me&&!isClosed&&proposalStatus==="pending"?`
+            <button class="btn secondary" onclick="deleteResponse('${id}','${rid}')">Retirar propuesta</button>`:""}
         </div>
       </div>`;
     }).join(""):"";
@@ -3093,6 +3172,6 @@ if ("serviceWorker" in navigator) {
   });
 }
 </script>
-<div class="versionBadge">V11.1</div>
+<div class="versionBadge">V11.2</div>
 </body>
 </html>
